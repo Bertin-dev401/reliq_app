@@ -1,4 +1,4 @@
-is a cross-platform mobile app built with **Flutter & Dart**, designed to combine the **Bible experience** with **faith-based community and local connection**.  
+RELIQ is a cross-platform mobile app built with **Flutter & Dart**, designed to combine the **Bible experience** with **faith-based community and local connection**.  
 Users can:
 - Read and bookmark Bible verses  
 - Join faith-based communities (Catholic, Protestant, Anglican, Mormon, etc.)  
