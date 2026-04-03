@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // App Bar
             SliverAppBar(
               floating: true,
-              title: const Text('FaithConnect'),
+              title: const Text('Reliq'),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),

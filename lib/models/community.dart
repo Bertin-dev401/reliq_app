@@ -1,3 +1,13 @@
+enum Denomination {
+  catholic,
+  protestant,
+  anglican,
+  mormon,
+  muslim,
+  orthodox,
+  adventist,
+}
+
 class Community {
   final String id;
   final String name;

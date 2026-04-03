@@ -44,7 +44,7 @@ class FaithConnectApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => StreakProvider()),
       ],
       child: GetMaterialApp(
-        title: 'FaithConnect',
+        title: 'Reliq',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
