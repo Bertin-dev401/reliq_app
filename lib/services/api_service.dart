@@ -1,24 +1,17 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 
-/// Main API service for communicating with backend
-/// 
-/// This service handles all HTTP requests to the backend API.
-/// Replace the baseUrl with your actual backend URL.
-/// 
-/// Usage:
-/// ```dart
-/// final apiService = ApiService();
-/// final response = await apiService.get('/communities');
-/// ```
 class ApiService {
-  /// Backend API base URL - CHANGE THIS TO YOUR ACTUAL API
   static const String baseUrl = 'https://your-api-domain.com/api/v1';
-  
-  /// Dio instance for making HTTP requests
+  static const String _tokenKey = 'auth_token';
+
+  // Set this to true once your real backend is ready.
+  // While false, all auth calls skip the network and use local storage.
+  static const bool backendReady = false;
+
   late final Dio _dio;
 
-  /// Initialize API service with configuration
   ApiService() {
     _dio = Dio(
       BaseOptions(
@@ -31,173 +24,157 @@ class ApiService {
         },
       ),
     );
-
-    // Add interceptors for logging and auth
     _dio.interceptors.add(_LoggingInterceptor());
     _dio.interceptors.add(_AuthInterceptor());
   }
 
-  // ==================== Authentication APIs ====================
+  // ── Token helpers ──────────────────────────────────────────
+  // Saves the JWT token returned by the backend after login/signup.
+  // Every subsequent request reads this token and attaches it as
+  // "Authorization: Bearer <token>" via the _AuthInterceptor below.
+  static Future<void> saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+  }
 
-  /// Sign in with email and password
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
+
+  // ── Auth ───────────────────────────────────────────────────
+  // POST /auth/signin  →  { token, user }
   Future<Map<String, dynamic>> signIn(String email, String password) async {
     try {
-      final response = await _dio.post(
-        '/auth/signin',
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
-      return response.data;
+      final res = await _dio.post('/auth/signin', data: {
+        'email': email,
+        'password': password,
+      });
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Sign up new user
+  // POST /auth/signup  →  { token, user }
+  // Now includes ethnicity and denomination collected during signup.
   Future<Map<String, dynamic>> signUp({
     required String name,
     required String email,
     required String password,
+    required String ethnicity,
+    required String denomination,
   }) async {
     try {
-      final response = await _dio.post(
-        '/auth/signup',
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-        },
-      );
-      return response.data;
+      final res = await _dio.post('/auth/signup', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'ethnicity': ethnicity,
+        'denomination': denomination,
+      });
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Request password reset
+  // POST /auth/reset-password  →  sends reset email
   Future<void> resetPassword(String email) async {
     try {
-      await _dio.post(
-        '/auth/reset-password',
-        data: {'email': email},
-      );
+      await _dio.post('/auth/reset-password', data: {'email': email});
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // ==================== User APIs ====================
+  // POST /auth/verify  →  { success }
+  Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
+    try {
+      final res = await _dio.post('/auth/verify', data: {
+        'email': email,
+        'otp': otp,
+      });
+      return res.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 
-  /// Get user profile
+  // ── Users ──────────────────────────────────────────────────
   Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      final response = await _dio.get('/users/$userId');
-      return response.data;
+      final res = await _dio.get('/users/$userId');
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Update user profile
   Future<Map<String, dynamic>> updateUserProfile(
-    String userId,
-    Map<String, dynamic> data,
-  ) async {
+      String userId, Map<String, dynamic> data) async {
     try {
-      final response = await _dio.put('/users/$userId', data: data);
-      return response.data;
+      final res = await _dio.put('/users/$userId', data: data);
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // ==================== Community APIs ====================
-
-  /// Get all communities
-  Future<List<dynamic>> getCommunities({
-    String? denomination,
-    int? page,
-    int? limit,
-  }) async {
+  // ── Communities ────────────────────────────────────────────
+  Future<List<dynamic>> getCommunities({String? denomination, int page = 1, int limit = 20}) async {
     try {
-      final response = await _dio.get(
-        '/communities',
-        queryParameters: {
-          if (denomination != null) 'denomination': denomination,
-          if (page != null) 'page': page,
-          if (limit != null) 'limit': limit,
-        },
-      );
-      return response.data['data'] ?? [];
+      final res = await _dio.get('/communities', queryParameters: {
+        if (denomination != null) 'denomination': denomination,
+        'page': page,
+        'limit': limit,
+      });
+      return res.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Get community posts
-  Future<List<dynamic>> getCommunityPosts(
-    String communityId, {
-    int? page,
-    int? limit,
-  }) async {
+  Future<List<dynamic>> getCommunityPosts(String communityId, {int page = 1}) async {
     try {
-      final response = await _dio.get(
-        '/communities/$communityId/posts',
-        queryParameters: {
-          if (page != null) 'page': page,
-          if (limit != null) 'limit': limit,
-        },
-      );
-      return response.data['data'] ?? [];
+      final res = await _dio.get('/communities/$communityId/posts',
+          queryParameters: {'page': page, 'limit': 20});
+      return res.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Create a new post
   Future<Map<String, dynamic>> createPost(
-    String communityId,
-    Map<String, dynamic> postData,
-  ) async {
+      String communityId, Map<String, dynamic> postData) async {
     try {
-      final response = await _dio.post(
-        '/communities/$communityId/posts',
-        data: postData,
-      );
-      return response.data;
+      final res = await _dio.post('/communities/$communityId/posts', data: postData);
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // ==================== Events APIs ====================
-
-  /// Get all events
-  Future<List<dynamic>> getEvents({
-    String? denomination,
-    bool? onlineOnly,
-    int? page,
-    int? limit,
-  }) async {
+  // ── Events ─────────────────────────────────────────────────
+  Future<List<dynamic>> getEvents({String? denomination, bool? onlineOnly, int page = 1}) async {
     try {
-      final response = await _dio.get(
-        '/events',
-        queryParameters: {
-          if (denomination != null) 'denomination': denomination,
-          if (onlineOnly != null) 'online_only': onlineOnly,
-          if (page != null) 'page': page,
-          if (limit != null) 'limit': limit,
-        },
-      );
-      return response.data['data'] ?? [];
+      final res = await _dio.get('/events', queryParameters: {
+        if (denomination != null) 'denomination': denomination,
+        if (onlineOnly != null) 'online_only': onlineOnly,
+        'page': page,
+        'limit': 20,
+      });
+      return res.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// RSVP to an event
   Future<void> rsvpEvent(String eventId) async {
     try {
       await _dio.post('/events/$eventId/rsvp');
@@ -206,226 +183,87 @@ class ApiService {
     }
   }
 
-  // ==================== Bible APIs ====================
-
-  /// Get daily verse
-  Future<Map<String, dynamic>> getDailyVerse() async {
+  // ── Marketplace ────────────────────────────────────────────
+  Future<List<dynamic>> getProducts({String? category, int page = 1}) async {
     try {
-      final response = await _dio.get('/bible/daily-verse');
-      return response.data;
+      final res = await _dio.get('/products', queryParameters: {
+        if (category != null) 'category': category,
+        'page': page,
+        'limit': 20,
+      });
+      return res.data['data'] ?? [];
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Search verses
-  Future<List<dynamic>> searchVerses(String query) async {
+  Future<Map<String, dynamic>> createOrder(Map<String, dynamic> orderData) async {
     try {
-      final response = await _dio.get(
-        '/bible/search',
-        queryParameters: {'q': query},
-      );
-      return response.data['data'] ?? [];
+      final res = await _dio.post('/orders', data: orderData);
+      return res.data;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // ==================== Marketplace APIs ====================
-
-  /// Get all products
-  Future<List<dynamic>> getProducts({
-    String? category,
-    int? page,
-    int? limit,
-  }) async {
-    try {
-      final response = await _dio.get(
-        '/products',
-        queryParameters: {
-          if (category != null) 'category': category,
-          if (page != null) 'page': page,
-          if (limit != null) 'limit': limit,
-        },
-      );
-      return response.data['data'] ?? [];
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Create order
-  Future<Map<String, dynamic>> createOrder(
-    Map<String, dynamic> orderData,
-  ) async {
-    try {
-      final response = await _dio.post('/orders', data: orderData);
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // ==================== Generic Methods ====================
-
-  /// Generic GET request
-  Future<dynamic> get(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      final response = await _dio.get(
-        path,
-        queryParameters: queryParameters,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Generic POST request
-  Future<dynamic> post(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      final response = await _dio.post(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Generic PUT request
-  Future<dynamic> put(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      final response = await _dio.put(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Generic DELETE request
-  Future<dynamic> delete(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    try {
-      final response = await _dio.delete(
-        path,
-        queryParameters: queryParameters,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // ==================== Error Handling ====================
-
-  /// Handle Dio errors and convert to readable messages
-  String _handleError(DioException error) {
-    switch (error.type) {
+  // ── Error handler ──────────────────────────────────────────
+  String _handleError(DioException e) {
+    switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return 'Connection timeout. Please check your internet connection.';
-
+        return 'Connection timeout. Check your internet.';
       case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        final message = error.response?.data?['message'] ?? 'Unknown error occurred';
-        
-        if (statusCode == 400) return 'Bad request: $message';
-        if (statusCode == 401) return 'Unauthorized. Please login again.';
-        if (statusCode == 403) return 'Access forbidden.';
-        if (statusCode == 404) return 'Resource not found.';
-        if (statusCode == 500) return 'Server error. Please try again later.';
-        
-        return message;
-
+        final code = e.response?.statusCode;
+        final msg = e.response?.data?['message'] ?? 'Unknown error';
+        if (code == 401) return 'Incorrect email or password.';
+        if (code == 403) return 'Access forbidden.';
+        if (code == 404) return 'Not found.';
+        if (code == 500) return 'Server error. Try again later.';
+        return msg;
       case DioExceptionType.cancel:
         return 'Request cancelled.';
-
-      case DioExceptionType.unknown:
       default:
-        return 'Network error. Please check your connection.';
+        return 'Network error. Check your connection.';
     }
   }
 }
 
-// ==================== Interceptors ====================
+// ── Interceptors ───────────────────────────────────────────────────────────────
 
-/// Logging interceptor for debugging API requests
 class _LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    developer.log(
-      '→ ${options.method} ${options.path}',
-      name: 'API Request',
-    );
-    developer.log(
-      'Headers: ${options.headers}',
-      name: 'API Request',
-    );
-    if (options.data != null) {
-      developer.log(
-        'Data: ${options.data}',
-        name: 'API Request',
-      );
-    }
+    developer.log('→ ${options.method} ${options.path}', name: 'API');
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    developer.log(
-      '← ${response.statusCode} ${response.requestOptions.path}',
-      name: 'API Response',
-    );
+    developer.log('← ${response.statusCode} ${response.requestOptions.path}', name: 'API');
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    developer.log(
-      '✖ ${err.requestOptions.method} ${err.requestOptions.path}',
-      name: 'API Error',
-      error: err.message,
-    );
+    developer.log('✖ ${err.requestOptions.path} — ${err.message}', name: 'API');
     super.onError(err, handler);
   }
 }
 
-/// Authentication interceptor to add auth tokens to requests
+// Reads the saved JWT token from SharedPreferences and attaches it to
+// every outgoing request as "Authorization: Bearer <token>".
+// Requests to /auth/* are skipped since they don't need a token yet.
 class _AuthInterceptor extends Interceptor {
   @override
-  void onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) async {
-    // TODO: Get auth token from secure storage
-    // Example:
-    // final prefs = await SharedPreferences.getInstance();
-    // final token = prefs.getString('auth_token');
-    // if (token != null) {
-    //   options.headers['Authorization'] = 'Bearer $token';
-    // }
-    
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    final isAuthRoute = options.path.startsWith('/auth/');
+    if (!isAuthRoute) {
+      final token = await ApiService.getToken();
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    }
     super.onRequest(options, handler);
   }
 }

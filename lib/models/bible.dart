@@ -13,6 +13,7 @@ class BibleVerse {
   final String translation;
   final bool isBookmarked;
   final bool isHighlighted;
+  final String? _referenceOverride;
 
   BibleVerse({
     required this.id,
@@ -23,7 +24,8 @@ class BibleVerse {
     this.translation = 'KJV',
     this.isBookmarked = false,
     this.isHighlighted = false,
-  });
+    String? reference,
+  }) : _referenceOverride = reference;
 
   /// Create BibleVerse from JSON
   factory BibleVerse.fromJson(Map<String, dynamic> json) {
@@ -54,7 +56,7 @@ class BibleVerse {
   }
 
   /// Get formatted verse reference (e.g., "John 3:16")
-  String get reference => '$book $chapter:$verse';
+  String get reference => _referenceOverride ?? '$book $chapter:$verse';
 
   /// Create a copy with updated fields
   BibleVerse copyWith({
