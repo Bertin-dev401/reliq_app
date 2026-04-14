@@ -22,7 +22,7 @@ import '../screens/profile/setting_screen.dart';
 import '../screens/marketplace/market_place_screen.dart';
 import '../screens/marketplace/product_detail_screen.dart';
 import '../screens/marketplace/seller_shop_screen.dart';
-import '../screens/streaks/straeks_screen.dart';
+import '../screens/streaks/streaks_screen.dart';
 import '../screens/quiz/quiz_screen.dart';
 import '../screens/quiz/quiz_detail_screen.dart';
 import '../screens/chat/chat_screen.dart';

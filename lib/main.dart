@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'config/routes.dart';
 import 'theme/reliq_themes.dart';
 import 'services/theme_service.dart';
+import 'services/firebase_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/community_provider.dart';
 import 'providers/bible_provider.dart';
@@ -19,6 +20,14 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Initialize Firebase
+  try {
+    await FirebaseService.initialize();
+    print('✅ Firebase initialized in main()');
+  } catch (e) {
+    print('❌ Firebase initialization error: $e');
+  }
 
   // Load saved theme — only apply if user has already chosen one at signup
   final prefs = await SharedPreferences.getInstance();
@@ -42,15 +51,21 @@ class ReliqApp extends StatefulWidget {
 class _ReliqAppState extends State<ReliqApp> {
   late String _currentTheme;
 
+  void changeTheme(String themeKey) async {
+    await ThemeService.saveTheme(themeKey);
+    setState(() => _currentTheme = themeKey);
+  }
+
   @override
   void initState() {
     super.initState();
     _currentTheme = widget.initialTheme;
-  }
-
-  void changeTheme(String themeKey) async {
-    await ThemeService.saveTheme(themeKey);
-    setState(() => _currentTheme = themeKey);
+    
+    // Initialize Firebase auth listener
+    Future.microtask(() {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.initializeAuthListener();
+    });
   }
 
   @override

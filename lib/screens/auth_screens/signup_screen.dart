@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../theme/reliq_themes.dart';
 import '../../main.dart';
 import '../../services/theme_service.dart';
+import '../../utils/validation_utils.dart';
+import '../../utils/error_handler.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -50,45 +52,91 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ErrorHandler.showWarning(context, 'Please fix the errors above');
+      return;
+    }
+
+    // Validate name
+    final nameError = ValidationUtils.validateName(_nameCtrl.text);
+    if (nameError != null) {
+      ErrorHandler.showError(context, nameError);
+      return;
+    }
+
+    // Validate email
+    final emailError = ValidationUtils.validateEmail(_emailCtrl.text.trim());
+    if (emailError != null) {
+      ErrorHandler.showError(context, emailError);
+      return;
+    }
+
+    // Validate password
+    final passError = ValidationUtils.validatePassword(_passCtrl.text);
+    if (passError != null) {
+      ErrorHandler.showError(context, passError);
+      return;
+    }
+
+    // Validate password confirmation
+    final confirmError = ValidationUtils.validateConfirmPassword(
+      _confirmCtrl.text,
+      _passCtrl.text,
+    );
+    if (confirmError != null) {
+      ErrorHandler.showError(context, confirmError);
+      return;
+    }
+
     if (_selectedEthnicity == null) {
-      _showError('Please select your ethnic group');
+      ErrorHandler.showError(context, 'Please select your ethnic group');
       return;
     }
+
     if (_selectedDenomination == null) {
-      _showError('Please select your faith denomination');
+      ErrorHandler.showError(context, 'Please select your faith denomination');
       return;
     }
+
     setState(() => _isLoading = true);
 
-    // Save theme and mark as chosen — theme applies AFTER signup
-    await ThemeService.saveTheme(_selectedTheme);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('theme_chosen', true);
-    if (mounted) ReliqApp.of(context)?.changeTheme(_selectedTheme);
+    try {
+      // Save theme and mark as chosen — theme applies AFTER signup
+      await ThemeService.saveTheme(_selectedTheme);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('theme_chosen', true);
+      if (mounted) ReliqApp.of(context)?.changeTheme(_selectedTheme);
 
-    // Call the real signup API via AuthProvider
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.signUp(
-      name: _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-      password: _passCtrl.text,
-      ethnicity: _selectedEthnicity!,
-      denomination: _selectedDenomination!,
-    );
+      // Call the real signup API via AuthProvider
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final success = await auth.signUp(
+        name: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+        ethnicity: _selectedEthnicity!,
+        denomination: _selectedDenomination!,
+      );
 
-    setState(() => _isLoading = false);
-    if (success && mounted) {
-      Get.offNamed('/main');
-    } else if (mounted && auth.error != null) {
-      _showError(auth.error!);
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        if (success) {
+          ErrorHandler.showSuccess(context, 'Account created successfully!');
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) Get.offNamed('/main');
+          });
+        } else {
+          final errorMsg = auth.error ?? 'Failed to create account. Please try again.';
+          ErrorHandler.showError(context, errorMsg);
+          auth.clearError();
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ErrorHandler.showError(context, 'An unexpected error occurred');
+      }
     }
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
   }
 
   @override
@@ -114,7 +162,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _nameCtrl,
                 label: 'Full Name',
                 icon: Icons.person_outline,
-                validator: (v) => v!.trim().isEmpty ? 'Enter your name' : null,
+                validator: ValidationUtils.validateName,
               ),
               const SizedBox(height: 16),
 
@@ -124,8 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 label: 'Email',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) =>
-                    !v!.contains('@') ? 'Enter a valid email' : null,
+                validator: ValidationUtils.validateEmail,
               ),
               const SizedBox(height: 16),
 
@@ -139,8 +186,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   icon: Icon(_obscurePass ? Icons.visibility_off : Icons.visibility),
                   onPressed: () => setState(() => _obscurePass = !_obscurePass),
                 ),
-                validator: (v) =>
-                    v!.length < 6 ? 'Minimum 6 characters' : null,
+                validator: ValidationUtils.validatePassword,
               ),
               const SizedBox(height: 16),
 
@@ -154,8 +200,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
                   onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
-                validator: (v) =>
-                    v != _passCtrl.text ? 'Passwords do not match' : null,
+                validator: (v) => ValidationUtils.validateConfirmPassword(v, _passCtrl.text),
               ),
               const SizedBox(height: 24),
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../models/user.dart';
 import '../services/api_service.dart';
+import '../services/firebase_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _currentUser;
@@ -16,117 +18,116 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Called once when the app starts (from main.dart).
-  // Checks if a token is already saved — if yes, the user is still
-  // logged in and we skip the welcome/signin screens entirely.
-  Future<bool> tryAutoLogin() async {
-    final token = await ApiService.getToken();
-    if (token == null) return false;
-
-    try {
-      // Token exists — load the saved user data from local storage
-      // so we don't need a network call just to restore the session.
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-      final userName = prefs.getString('user_name');
-      final userEmail = prefs.getString('user_email');
-      final userDenomination = prefs.getString('user_denomination');
-
-      if (userId == null || userEmail == null) return false;
-
-      _currentUser = User(
-        id: userId,
-        email: userEmail,
-        name: userName ?? '',
-        denomination: userDenomination,
-        joinedDate: DateTime.now(),
-      );
-      _isAuthenticated = true;
+  /// Initialize auth listener when app starts
+  void initializeAuthListener() {
+    _api.authStateChanges.listen((firebase_auth.User? firebaseUser) async {
+      if (firebaseUser == null) {
+        _currentUser = null;
+        _isAuthenticated = false;
+      } else {
+        _isAuthenticated = true;
+        // Load user profile from Firestore
+        try {
+          final profile = await _api.getUserProfile(firebaseUser.uid);
+          if (profile != null) {
+            _currentUser = User(
+              id: firebaseUser.uid,
+              email: firebaseUser.email ?? '',
+              name: profile['name'] ?? firebaseUser.displayName ?? '',
+              denomination: profile['denomination'],
+              joinedDate: DateTime.parse(profile['createdAt'].toDate().toString()),
+            );
+          }
+        } catch (e) {
+          print('Error loading user profile: $e');
+        }
+      }
       notifyListeners();
-      return true;
-    } catch (_) {
+    });
+  }
+
+  /// Try to restore session on app startup
+  /// Returns true if user is already authenticated
+  Future<bool> tryAutoLogin() async {
+    try {
+      final currentFirebaseUser = firebase_auth.FirebaseAuth.instance.currentUser;
+      if (currentFirebaseUser != null) {
+        _isAuthenticated = true;
+        
+        // Load user profile from Firestore
+        final profile = await _api.getUserProfile(currentFirebaseUser.uid);
+        if (profile != null) {
+          _currentUser = User(
+            id: currentFirebaseUser.uid,
+            email: currentFirebaseUser.email ?? '',
+            name: profile['name'] ?? currentFirebaseUser.displayName ?? '',
+            denomination: profile['denomination'],
+            joinedDate: DateTime.parse(profile['createdAt'].toDate().toString()),
+          );
+        }
+        
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error during auto login: $e');
       return false;
     }
   }
 
-  // Signs the user in via POST /auth/signin.
-  // Falls back to local credential check if no backend is available yet.
+  /// Sign in with email and password
+  /// Uses Firebase Authentication
   Future<bool> signIn(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    // Skip network entirely until backend is ready
-    if (!ApiService.backendReady) {
-      return await _localSignIn(email, password);
-    }
-
     try {
-      final data = await _api.signIn(email, password);
-      final token = data['token'] as String?;
-      final userData = data['user'] as Map<String, dynamic>?;
-      if (token == null || userData == null) {
-        _error = 'Invalid response from server.';
+      final result = await _api.signIn(email, password);
+      
+      if (result['success'] != true) {
+        _error = result['message'] ?? 'Sign in failed';
         _isLoading = false;
         notifyListeners();
         return false;
       }
+
+      final token = result['token'] as String?;
+      final userData = result['user'] as Map<String, dynamic>?;
+      
+      if (token == null || userData == null) {
+        _error = 'Invalid response from server';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       await ApiService.saveToken(token);
       await _saveUserLocally(userData);
-      _currentUser = User.fromJson(userData);
-      _isAuthenticated = true;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (_) {
-      return await _localSignIn(email, password);
-    }
-  }
-
-  // Checks the email + hashed password stored locally during signup.
-  Future<bool> _localSignIn(String email, String password) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final storedEmail = prefs.getString('local_email') ?? '';
-      final storedPass = prefs.getString('local_password') ?? '';
-
-      if (email.trim().toLowerCase() != storedEmail.toLowerCase() ||
-          password != storedPass) {
-        _error = 'Incorrect email or password.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Credentials match — restore the user session
-      final userId = prefs.getString('user_id') ?? 'local_user';
-      final userName = prefs.getString('user_name') ?? '';
-      final userDenomination = prefs.getString('user_denomination');
-
-      // Issue a local token so tryAutoLogin works on next app open
-      await ApiService.saveToken('local_token_$userId');
-
+      
       _currentUser = User(
-        id: userId,
-        email: email,
-        name: userName,
-        denomination: userDenomination,
+        id: userData['uid'] ?? '',
+        email: userData['email'] ?? '',
+        name: userData['name'] ?? '',
+        denomination: userData['denomination'],
         joinedDate: DateTime.now(),
       );
+      
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Sign in failed. Please try again.';
+      _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  // Signs up via POST /auth/signup.
-  // Falls back to local storage if no backend is available yet.
+  /// Sign up with email, password, and user details
+  /// Uses Firebase Authentication and Firestore
   Future<bool> signUp({
     required String name,
     required String email,
@@ -138,91 +139,57 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    // Skip network entirely until backend is ready
-    if (!ApiService.backendReady) {
-      return await _localSignUp(
-        name: name,
-        email: email,
-        password: password,
-        denomination: denomination,
-      );
-    }
-
     try {
-      final data = await _api.signUp(
+      final result = await _api.signUp(
         name: name,
         email: email,
         password: password,
         ethnicity: ethnicity,
         denomination: denomination,
       );
-      final token = data['token'] as String?;
-      final userData = data['user'] as Map<String, dynamic>?;
-      if (token == null || userData == null) {
-        _error = 'Invalid response from server.';
+
+      if (result['success'] != true) {
+        _error = result['message'] ?? 'Sign up failed';
         _isLoading = false;
         notifyListeners();
         return false;
       }
+
+      final token = result['token'] as String?;
+      final userData = result['user'] as Map<String, dynamic>?;
+      
+      if (token == null || userData == null) {
+        _error = 'Invalid response from server';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       await ApiService.saveToken(token);
       await _saveUserLocally(userData);
-      _currentUser = User.fromJson(userData);
-      _isAuthenticated = true;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (_) {
-      return await _localSignUp(
-        name: name,
-        email: email,
-        password: password,
-        denomination: denomination,
-      );
-    }
-  }
-
-  Future<bool> _localSignUp({
-    required String name,
-    required String email,
-    required String password,
-    required String denomination,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = 'local_${DateTime.now().millisecondsSinceEpoch}';
-
-      // Store credentials for local sign in validation
-      await prefs.setString('local_email', email.trim().toLowerCase());
-      await prefs.setString('local_password', password);
-
-      await prefs.setString('user_id', userId);
-      await prefs.setString('user_name', name);
-      await prefs.setString('user_email', email);
-      await prefs.setString('user_denomination', denomination);
-
-      // Issue a local token
-      await ApiService.saveToken('local_token_$userId');
-
+      
       _currentUser = User(
-        id: userId,
-        email: email,
-        name: name,
-        denomination: denomination,
+        id: userData['uid'] ?? '',
+        email: userData['email'] ?? '',
+        name: userData['name'] ?? '',
+        denomination: userData['denomination'],
         joinedDate: DateTime.now(),
       );
+      
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Could not create account. Please try again.';
+      _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  // Sends a password reset email via POST /auth/reset-password.
+  /// Reset password via email
+  /// Sends password reset email to user
   Future<bool> resetPassword(String email) async {
     _isLoading = true;
     _error = null;
@@ -241,58 +208,103 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Verifies the OTP code sent to the user's email.
-  Future<bool> verifyOtp(String email, String otp) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
+  /// Sign out current user
+  /// Clears all authentication data and user session
+  Future<void> signOut() async {
     try {
-      await _api.verifyOtp(email, otp);
-      _isLoading = false;
+      await _api.signOut();
+      await ApiService.clearToken();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_id');
+      await prefs.remove('user_name');
+      await prefs.remove('user_email');
+      await prefs.remove('user_denomination');
+      
+      _currentUser = null;
+      _isAuthenticated = false;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Sign out failed: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Update user profile
+  /// Updates user data in Firestore
+  Future<bool> updateProfile(Map<String, dynamic> updates) async {
+    try {
+      if (_currentUser == null) {
+        _error = 'No user is currently signed in';
+        return false;
+      }
+
+      await _api.updateUserProfile(_currentUser!.id, updates);
+      
+      // Update local user object
+      _currentUser = User(
+        id: _currentUser!.id,
+        email: updates['email'] ?? _currentUser!.email,
+        name: updates['name'] ?? _currentUser!.name,
+        denomination: updates['denomination'] ?? _currentUser!.denomination,
+        joinedDate: _currentUser!.joinedDate,
+      );
+      
+      await _saveUserLocally({
+        'uid': _currentUser!.id,
+        'email': _currentUser!.email,
+        'name': _currentUser!.name,
+        'denomination': _currentUser!.denomination,
+      });
+      
       notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
-      _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  // Clears the token, user data, and resets state.
-  Future<void> signOut() async {
-    await ApiService.clearToken();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_id');
-    await prefs.remove('user_name');
-    await prefs.remove('user_email');
-    await prefs.remove('user_denomination');
-    await prefs.remove('local_email');
-    await prefs.remove('local_password');
-    _currentUser = null;
-    _isAuthenticated = false;
-    notifyListeners();
-  }
+  /// Delete user account permanently
+  /// This is irreversible - deletes all user data
+  Future<bool> deleteAccount() async {
+    try {
+      if (_currentUser == null) {
+        _error = 'No user is currently signed in';
+        return false;
+      }
 
-  Future<void> updateProfile(User updatedUser) async {
-    _currentUser = updatedUser;
-    await _saveUserLocally(updatedUser.toJson());
-    notifyListeners();
-  }
-
-  // Saves minimal user info locally so tryAutoLogin() can restore
-  // the session without a network call on every app open.
-  Future<void> _saveUserLocally(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', userData['id']?.toString() ?? '');
-    await prefs.setString('user_name', userData['name']?.toString() ?? '');
-    await prefs.setString('user_email', userData['email']?.toString() ?? '');
-    if (userData['denomination'] != null) {
-      await prefs.setString('user_denomination', userData['denomination'].toString());
+      await _api.deleteAccount(_currentUser!.id);
+      
+      _currentUser = null;
+      _isAuthenticated = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 
+  /// Save user info locally for quick access
+  /// Used to restore session on app restart
+  Future<void> _saveUserLocally(Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', userData['uid']?.toString() ?? '');
+      await prefs.setString('user_name', userData['name']?.toString() ?? '');
+      await prefs.setString('user_email', userData['email']?.toString() ?? '');
+      if (userData['denomination'] != null) {
+        await prefs.setString('user_denomination', userData['denomination'].toString());
+      }
+    } catch (e) {
+      print('Error saving user locally: $e');
+    }
+  }
+
+  /// Clear error message
   void clearError() {
     _error = null;
     notifyListeners();

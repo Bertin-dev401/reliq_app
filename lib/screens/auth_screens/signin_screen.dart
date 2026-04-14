@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/validation_utils.dart';
+import '../../utils/error_handler.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -23,12 +25,37 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ErrorHandler.showWarning(context, 'Please fix the errors above');
+      return;
+    }
+    
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+    
+    // Validate email format one more time
+    final emailError = ValidationUtils.validateEmail(email);
+    if (emailError != null) {
+      ErrorHandler.showError(context, emailError);
+      return;
+    }
+
     // Calls POST /auth/signin — saves token on success, sets error on failure
-    final success = await auth.signIn(_emailCtrl.text.trim(), _passCtrl.text);
-    if (success && mounted) {
-      Get.offNamed('/main');
+    final success = await auth.signIn(email, password);
+    
+    if (mounted) {
+      if (success) {
+        ErrorHandler.showSuccess(context, 'Welcome back!');
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) Get.offNamed('/main');
+        });
+      } else {
+        // Show error from auth provider
+        final errorMsg = auth.error ?? 'Sign in failed. Please try again.';
+        ErrorHandler.showError(context, errorMsg);
+        auth.clearError();
+      }
     }
   }
 
@@ -67,32 +94,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Error banner — shown when API returns an error
-                if (auth.error != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(auth.error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
-                        ),
-                        GestureDetector(
-                          onTap: auth.clearError,
-                          child: const Icon(Icons.close, color: Colors.red, size: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-
                 Form(
                   key: _formKey,
                   child: Column(
@@ -101,8 +102,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         decoration: _inputDeco('Email', Icons.email_outlined),
-                        validator: (v) =>
-                            !v!.contains('@') ? 'Enter a valid email' : null,
+                        validator: ValidationUtils.validateEmail,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -115,7 +115,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ),
                         validator: (v) =>
-                            v!.length < 6 ? 'Minimum 6 characters' : null,
+                            v!.isEmpty ? 'Password is required' : null,
                       ),
                     ],
                   ),
