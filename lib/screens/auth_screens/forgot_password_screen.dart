@@ -62,25 +62,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'We sent a 6-digit code to ${_emailCtrl.text.trim()}',
+                    'We sent a password reset link to ${_emailCtrl.text.trim()}. Open your email and tap the link to reset your password.',
                     style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     textAlign: TextAlign.center,
                   ),
+                  // Firebase sends a password reset link directly to the email.
+                  // No OTP screen needed — Firebase handles the entire reset flow.
                   const SizedBox(height: 40),
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () => Get.toNamed(
-                        '/verification',
-                        arguments: {'email': _emailCtrl.text.trim()},
-                      ),
+                      onPressed: () => Get.offNamed('/signin'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Enter Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text('Back to Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

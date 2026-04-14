@@ -1,14 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 
+// ApiService handles calls to your custom backend (communities, events,
+// marketplace, orders). Auth is fully handled by Firebase Auth now —
+// no token management needed here. Firebase Auth automatically provides
+// a fresh ID token which we attach to every request via _AuthInterceptor.
 class ApiService {
   static const String baseUrl = 'https://your-api-domain.com/api/v1';
-  static const String _tokenKey = 'auth_token';
-
-  // Set this to true once your real backend is ready.
-  // While false, all auth calls skip the network and use local storage.
-  static const bool backendReady = false;
 
   late final Dio _dio;
 
@@ -28,111 +27,13 @@ class ApiService {
     _dio.interceptors.add(_AuthInterceptor());
   }
 
-  // ── Token helpers ──────────────────────────────────────────
-  // Saves the JWT token returned by the backend after login/signup.
-  // Every subsequent request reads this token and attaches it as
-  // "Authorization: Bearer <token>" via the _AuthInterceptor below.
-  static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-  }
-
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
-  }
-
-  static Future<void> clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-  }
-
-  // ── Auth ───────────────────────────────────────────────────
-  // POST /auth/signin  →  { token, user }
-  Future<Map<String, dynamic>> signIn(String email, String password) async {
-    try {
-      final res = await _dio.post('/auth/signin', data: {
-        'email': email,
-        'password': password,
-      });
-      return res.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // POST /auth/signup  →  { token, user }
-  // Now includes ethnicity and denomination collected during signup.
-  Future<Map<String, dynamic>> signUp({
-    required String name,
-    required String email,
-    required String password,
-    required String ethnicity,
-    required String denomination,
-  }) async {
-    try {
-      final res = await _dio.post('/auth/signup', data: {
-        'name': name,
-        'email': email,
-        'password': password,
-        'ethnicity': ethnicity,
-        'denomination': denomination,
-      });
-      return res.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // POST /auth/reset-password  →  sends reset email
-  Future<void> resetPassword(String email) async {
-    try {
-      await _dio.post('/auth/reset-password', data: {'email': email});
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // POST /auth/verify  →  { success }
-  Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
-    try {
-      final res = await _dio.post('/auth/verify', data: {
-        'email': email,
-        'otp': otp,
-      });
-      return res.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // ── Users ──────────────────────────────────────────────────
-  Future<Map<String, dynamic>> getUserProfile(String userId) async {
-    try {
-      final res = await _dio.get('/users/$userId');
-      return res.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Map<String, dynamic>> updateUserProfile(
-      String userId, Map<String, dynamic> data) async {
-    try {
-      final res = await _dio.put('/users/$userId', data: data);
-      return res.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
   // ── Communities ────────────────────────────────────────────
-  Future<List<dynamic>> getCommunities({String? denomination, int page = 1, int limit = 20}) async {
+  Future<List<dynamic>> getCommunities({String? denomination, int page = 1}) async {
     try {
       final res = await _dio.get('/communities', queryParameters: {
         if (denomination != null) 'denomination': denomination,
         'page': page,
-        'limit': limit,
+        'limit': 20,
       });
       return res.data['data'] ?? [];
     } on DioException catch (e) {
@@ -216,7 +117,7 @@ class ApiService {
       case DioExceptionType.badResponse:
         final code = e.response?.statusCode;
         final msg = e.response?.data?['message'] ?? 'Unknown error';
-        if (code == 401) return 'Incorrect email or password.';
+        if (code == 401) return 'Unauthorized.';
         if (code == 403) return 'Access forbidden.';
         if (code == 404) return 'Not found.';
         if (code == 500) return 'Server error. Try again later.';
@@ -251,19 +152,19 @@ class _LoggingInterceptor extends Interceptor {
   }
 }
 
-// Reads the saved JWT token from SharedPreferences and attaches it to
-// every outgoing request as "Authorization: Bearer <token>".
-// Requests to /auth/* are skipped since they don't need a token yet.
+// Gets a fresh Firebase ID token and attaches it to every request.
+// Firebase ID tokens expire after 1 hour — getIdToken() automatically
+// refreshes it so you never have to manage token expiry manually.
 class _AuthInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final isAuthRoute = options.path.startsWith('/auth/');
-    if (!isAuthRoute) {
-      final token = await ApiService.getToken();
-      if (token != null) {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final token = await user.getIdToken();
         options.headers['Authorization'] = 'Bearer $token';
       }
-    }
+    } catch (_) {}
     super.onRequest(options, handler);
   }
 }

@@ -1,3 +1,10 @@
+plugins {
+    // The Google services plugin declared here at root level with apply false
+    // means it's available to subprojects but not applied here directly.
+    // It gets applied in android/app/build.gradle.kts
+    id("com.google.gms.google-services") version "4.4.4" apply false
+}
+
 allprojects {
     repositories {
         google()

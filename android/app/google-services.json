@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1421545920",
+    "project_id": "reliq-faith-app",
+    "storage_bucket": "reliq-faith-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1421545920:android:5c31379755272fa5727825",
+        "android_client_info": {
+          "package_name": "com.reliq.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDe7yurxlHy3RNDU13w73xLHSl8eROT7uU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,12 +1,13 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Apply google-services here at app level (no version or apply false here)
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.reliq_app"
+    namespace = "com.reliq.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,10 +21,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.reliq_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.reliq.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -41,4 +39,19 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Firebase BoM — manages all Firebase library versions automatically
+    // so you never get version conflicts between Firebase packages
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+
+    // Firebase Analytics — required base for most Firebase services
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Firebase Auth — for when you switch to Firebase Authentication
+    implementation("com.google.firebase:firebase-auth")
+
+    // Firebase Cloud Messaging — for push notifications
+    implementation("com.google.firebase:firebase-messaging")
 }

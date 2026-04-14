@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'config/routes.dart';
 import 'theme/reliq_themes.dart';
 import 'services/theme_service.dart';
@@ -15,12 +16,16 @@ import 'providers/streak_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase before anything else.
+  // All Firebase services (Auth, Firestore, Messaging etc.) require this.
+  await Firebase.initializeApp();
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Load saved theme — only apply if user has already chosen one at signup
   final prefs = await SharedPreferences.getInstance();
   final hasChosen = prefs.getBool('theme_chosen') ?? false;
   final savedTheme = hasChosen ? await ThemeService.getTheme() : 'white';
