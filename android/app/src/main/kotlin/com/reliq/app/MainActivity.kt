@@ -1,4 +1,4 @@
-package com.example.reliq_app
+package com.reliq.app
 
 import io.flutter.embedding.android.FlutterActivity
 

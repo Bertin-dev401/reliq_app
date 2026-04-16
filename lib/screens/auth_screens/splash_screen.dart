@@ -29,9 +29,14 @@ class _SplashScreenState extends State<SplashScreen>
     // If not   → go to /welcome (normal onboarding flow).
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final loggedIn = await auth.tryAutoLogin();
-      Get.offNamed(loggedIn ? '/main' : '/welcome');
+      try {
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        final loggedIn = await auth.tryAutoLogin();
+        Get.offNamed(loggedIn ? '/main' : '/welcome');
+      } catch (_) {
+        // If anything fails (Firebase, network etc.) just go to welcome
+        Get.offNamed('/welcome');
+      }
     });
   }
 

@@ -97,6 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     const darkText = Color(0xFF2D3748);
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: darkText,
@@ -108,6 +109,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(24),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             children: [
               // Name
               _buildField(
@@ -216,7 +218,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             entry.value,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isSelected ? color : null,
+                              color: isSelected ? color : const Color(0xFF2D3748),
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -300,8 +302,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
   InputDecoration _dropdownDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      hintStyle: TextStyle(color: Colors.grey[400]),
+      prefixIcon: Icon(icon, color: const Color(0xFF718096)),
+      filled: true,
+      fillColor: Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 2),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
@@ -319,11 +335,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
       controller: controller,
       obscureText: obscure,
       keyboardType: keyboardType,
+      style: const TextStyle(color: Color(0xFF2D3748), fontSize: 15),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: const TextStyle(color: Color(0xFF718096)),
+        prefixIcon: Icon(icon, color: const Color(0xFF718096)),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       validator: validator,

@@ -100,6 +100,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Color(0xFF2D3748)),
                         decoration: _inputDeco('Email', Icons.email_outlined),
                         validator: (v) =>
                             !v!.contains('@') ? 'Enter a valid email' : null,
@@ -108,6 +109,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       TextFormField(
                         controller: _passCtrl,
                         obscureText: _obscure,
+                        style: const TextStyle(color: Color(0xFF2D3748)),
                         decoration: _inputDeco('Password', Icons.lock_outline).copyWith(
                           suffixIcon: IconButton(
                             icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
@@ -177,8 +179,22 @@ class _SignInScreenState extends State<SignInScreen> {
   InputDecoration _inputDeco(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: const TextStyle(color: Color(0xFF718096)),
+      prefixIcon: Icon(icon, color: const Color(0xFF718096)),
+      filled: true,
+      fillColor: Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 2),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }

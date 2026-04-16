@@ -17,8 +17,6 @@ import 'providers/streak_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase before anything else.
-  // All Firebase services (Auth, Firestore, Messaging etc.) require this.
   await Firebase.initializeApp();
 
   await SystemChrome.setPreferredOrientations([
