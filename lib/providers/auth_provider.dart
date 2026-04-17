@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../models/user.dart';
 import '../services/api_service.dart';
-import '../services/firebase_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _currentUser;
@@ -197,6 +196,31 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _api.resetPassword(email);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Verify OTP from email
+  /// Used for email verification during signup flow
+  Future<bool> verifyOtp(String email, String otp) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // OTP verification logic - for now just validate the format
+      // In production, you'd call an API endpoint to verify the OTP
+      if (otp.length != 6 || !RegExp(r'^\d{6}$').hasMatch(otp)) {
+        throw Exception('Invalid OTP format. Please enter 6 digits.');
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;

@@ -27,7 +27,7 @@ dependencies:
   dio: ^5.4.0
 
   # Images & File Handling
-  cached_network_image: ^3.4.1
+  cached_network_image: ^3.4.0
   image_picker: ^1.1.2
   image_cropper: ^7.0.0
 

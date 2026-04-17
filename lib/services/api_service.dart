@@ -154,6 +154,30 @@ class ApiService {
     }
   }
 
+  /// Delete user account permanently
+  Future<void> deleteAccount(String userId) async {
+    try {
+      developer.log('DeleteAccount: Deleting account for $userId');
+      
+      // Delete user document from Firestore
+      await _firestore.deleteUserProfile(userId);
+      
+      // Delete Firebase Auth user
+      await _auth.currentUser?.delete();
+      
+      // Clear token
+      await clearToken();
+      
+      developer.log('DeleteAccount: Account deleted successfully');
+    } on FirebaseAuthException catch (e) {
+      developer.log('DeleteAccount Error: ${e.code} - ${e.message}');
+      throw _handleFirebaseAuthError(e);
+    } catch (e) {
+      developer.log('DeleteAccount Error: $e');
+      throw Exception('Account deletion failed: $e');
+    }
+  }
+
   /// Reset password via email
   Future<void> resetPassword(String email) async {
     try {

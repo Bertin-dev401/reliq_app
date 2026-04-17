@@ -3,7 +3,6 @@
 // DO NOT EDIT - Update via: flutterfire configure
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -11,58 +10,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7', // TODO: Replace with your key
-    appId: '1:123456789:android:abcdef123456', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
+    apiKey: 'AIzaSyDe7yurxlHy3RNDU13w73xLHSl8eROT7uU',
+    appId: '1:1421545920:android:5c31379755272fa5727825',
+    messagingSenderId: '1421545920',
+    projectId: 'reliq-faith-app',
     databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
+    storageBucket: 'reliq-faith-app.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyABC123DEF456GHI789JKL012MNO345PQR', // TODO: Replace with your key
-    appId: '1:123456789:ios:1234567890abcdef', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
+    apiKey: 'AIzaSyDpYhjul0JfujphgUO520jecRsdKxb1l3c',
+    appId: '1:1421545920:ios:abb97f1fbf6f4617727825',
+    messagingSenderId: '1421545920',
+    projectId: 'reliq-faith-app',
     databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
-    iosBundleId: 'com.reliq.faithapp',
-  );
-
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyWEB123KEY456SAMPLE789CONFIG', // TODO: Replace with your key
-    appId: '1:123456789:web:web12345678', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
-    databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
-    authDomain: 'reliq-faith-app.firebaseapp.com',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyMacOS123KEY456SAMPLE789', // TODO: Replace with your key
-    appId: '1:123456789:macos:macos12345', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
-    databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyWindows123KEY456SAMPLE789', // TODO: Replace with your key
-    appId: '1:123456789:windows:windows123456', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
-    databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
-  );
-
-  static const FirebaseOptions linux = FirebaseOptions(
-    apiKey: 'AIzaSyLinux123KEY456SAMPLE789CONFIG', // TODO: Replace with your key
-    appId: '1:123456789:linux:linux1234567', // TODO: Replace with your app ID
-    messagingSenderId: '123456789',
-    projectId: 'reliq-faith-app', // TODO: Replace with your project ID
-    databaseURL: 'https://reliq-faith-app.firebaseio.com',
-    storageBucket: 'reliq-faith-app.appspot.com',
+    storageBucket: 'reliq-faith-app.firebasestorage.app',
+    iosBundleId: 'com.reliq.app',
   );
 }

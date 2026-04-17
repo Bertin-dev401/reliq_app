@@ -169,6 +169,18 @@ class FirestoreService {
     }
   }
 
+  /// Delete user profile and all related data
+  Future<void> deleteUserProfile(String userId) async {
+    try {
+      // Delete user document
+      await _firestore.collection('users').doc(userId).delete();
+      print('✅ User profile deleted');
+    } catch (e) {
+      print('❌ Error deleting user profile: $e');
+      rethrow;
+    }
+  }
+
   // ==================== BIBLE VERSES ====================
 
   /// Cache Bible verse to Firestore (for syncing across devices)

@@ -3,7 +3,7 @@
 /// This file contains helper methods for validating user input
 /// across forms in the application.
 
-import '../constants/app_constants.dart';
+
 
 class ValidationUtils {
   /// Validate email address
@@ -122,34 +122,6 @@ class ValidationUtils {
       return 'Please enter a valid URL';
     }
 
-    return null;
-  }
-}
-
-    
-    // Allow letters, spaces, hyphens, and apostrophes
-    final nameRegex = RegExp(r"^[a-zA-Z\s\-']+$");
-    if (!nameRegex.hasMatch(value)) {
-      return 'Name can only contain letters, spaces, hyphens, and apostrophes';
-    }
-    
-    return null;
-  }
-
-  /// Validate URL
-  static String? validateUrl(String? value) {
-    if (value == null || value.isEmpty) {
-      return null; // Optional field
-    }
-    
-    final urlRegex = RegExp(
-      r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$',
-    );
-    
-    if (!urlRegex.hasMatch(value)) {
-      return 'Please enter a valid URL';
-    }
-    
     return null;
   }
 

@@ -1,31 +1,15 @@
 import 'package:hive/hive.dart';
 
-part 'bible_verse_cache.g.dart';
-
-@HiveType(typeId: 0)
-class BibleVerseCache extends HiveObject {
-  @HiveField(0)
+/// BibleVerseCache model for offline caching of Bible verses
+/// Stores verse data locally using Hive for quick access
+class BibleVerseCache {
   final String id;
-
-  @HiveField(1)
   final String book;
-
-  @HiveField(2)
   final int chapter;
-
-  @HiveField(3)
   final int verse;
-
-  @HiveField(4)
   final String text;
-
-  @HiveField(5)
   final String version;
-
-  @HiveField(6)
   final DateTime cachedAt;
-
-  @HiveField(7)
   final bool isBookmarked;
 
   BibleVerseCache({
@@ -35,9 +19,9 @@ class BibleVerseCache extends HiveObject {
     required this.verse,
     required this.text,
     required this.version,
-    this.cachedAt = const Duration(),
+    DateTime? cachedAt,
     this.isBookmarked = false,
-  }) : cachedAt = cachedAt == const Duration() ? DateTime.now() : cachedAt;
+  }) : cachedAt = cachedAt ?? DateTime.now();
 
   factory BibleVerseCache.fromJson(Map<String, dynamic> json) {
     return BibleVerseCache(

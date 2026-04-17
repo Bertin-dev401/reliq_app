@@ -1,9 +1,152 @@
+# ==========================================
+# Flutter & Dart
+# ==========================================
+.dart_tool/
+.flutter/
+build/
+.packages
+.package_config.json
+*.iml
+*.lock
+
+# ==========================================
+# Firebase Configuration (SECRETS)
+# ==========================================
+# DO NOT commit Firebase credentials!
+lib/services/firebase_options.dart
+.env
+.env.local
+.env.*.local
+
+# ==========================================
+# Android
+# ==========================================
+android/local.properties
+android/gradle.properties
+android/.gradle/
+android/.idea/
+android/*.iml
+android/.classpath
+android/.project
+android/.settings/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/app/google-services.json
+android/.DS_Store
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+
+# ==========================================
+# iOS
+# ==========================================
+ios/.DS_Store
+ios/**/*.mode1v3
+ios/**/*.mode2v3
+ios/**/*.moved-aside
+ios/**/*.pbxuser
+ios/**/*.perspectivev3
+ios/**/*sync/
+ios/**/.sconsign.dblite
+ios/**/.tags*
+ios/**/.vscode/
+ios/**/xcshareddata/
+ios/**/xcuserdata/
+ios/**/*.xcworkspace/
+ios/**/*.xcodeproj/
+ios/**/Flutter/Flutter.framework
+ios/**/Flutter/Flutter.podspec
+ios/**/Flutter/Flutter-Debug.xcconfig
+ios/**/Flutter/Flutter-Release.xcconfig
+ios/**/Flutter/Generated.xcconfig
+ios/**/Flutter/ephemeral/
+ios/**/Flutter/.last_build_id
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/
+ios/Runner/GoogleService-Info.plist
+ios/**/.symlinks/
+ios/**/.dart_tool/
+
+# ==========================================
+# macOS
+# ==========================================
+macos/Flutter/Flutter-Debug.xcconfig
+macos/Flutter/Flutter-Release.xcconfig
+macos/Flutter/Flutter-Generated.xcconfig
+macos/Flutter/user_defined.xcconfig
+macos/Flutter/ephemeral/
+macos/Podfile.lock
+macos/Pods/
+macos/**/*.xcworkspace/
+macos/**/*.xcodeproj/
+macos/.DS_Store
+
+# ==========================================
+# Linux
+# ==========================================
+linux/flutter/ephemeral/
+linux/flutter/generated_plugins.cmake
+linux/flutter/generated_plugins_platform_interface.h
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/include/flutter/generated_plugin_registrant.h
+
+# ==========================================
+# Windows
+# ==========================================
+windows/flutter/ephemeral/
+windows/flutter/generated_plugins.cmake
+windows/flutter/generated_plugins_platform_interface.h
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/include/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins/
+windows/flutter/.last_build_id
+
+# ==========================================
+# Web
+# ==========================================
+web/plugins/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# ==========================================
+# IDEs
+# ==========================================
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ==========================================
 # Miscellaneous
+# ==========================================
 *.class
 *.log
 *.pyc
 *.swp
-.DS_Store
 .atom/
 .build/
 .buildlog/
@@ -12,34 +155,86 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ==========================================
+# Node/NPM
+# ==========================================
+node_modules/
+npm-debug.log
+npm-debug.log*s
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ==========================================
+# Analysis/Coverage
+# ==========================================
+analysis_options.yaml
+coverage/
+*.lcov
+.coverage/
+
+# ==========================================
+# Generated Files
+# ==========================================
+lib/generated_plugin_registrant.dart
+lib/generated_plugins_platform_interface.dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ==========================================
+# Backup & Temporary Files
+# ==========================================
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+.#*
+
+# ==========================================
+# Sensitive Files
+# ==========================================
+# Passwords, API keys, secrets - NEVER COMMIT THESE!
+secrets/
+credentials/
+keys/
+*.key
+*.pem
+*.p8
+*.p12
+*.pkcs12
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+google-services.json
+GoogleService-Info.plist
+
+# ==========================================
+# Firebase Emulator
+# ==========================================
+.emulatorrc
+firebase-debug.log
+ui-debug.log
+
+# ==========================================
+# Build Output
+# ==========================================
+build/
+dist/
+/build/
+/coverage/
+app.*.symbols
+app.*.map.json
+.pub-cache/
+.pub/
+
+# ==========================================
+# IntelliJ Related
+# ==========================================
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
