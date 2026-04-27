@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../providers/bible_provider.dart';
 import '../../providers/streak_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../config/theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -23,51 +25,127 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).currentUser;
+    final firstName = user?.name.split(' ').first ?? 'Friend';
+
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           slivers: [
-            // App Bar
+            // ── App bar ──────────────────────────────
             SliverAppBar(
               floating: true,
-              title: const Text('Reliq'),
+              snap: true,
+              titleSpacing: 20,
+              title: Text(
+                'Reliq',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {},
+                // Chat icon — one tap away
+                _IconBtn(
+                  icon: Icons.chat_bubble_outline,
+                  onTap: () => Get.toNamed('/chat-list'),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  onPressed: () => Get.toNamed('/chat-list'),
+                // Notifications
+                _IconBtn(
+                  icon: Icons.notifications_outlined,
+                  onTap: () {},
                 ),
+                const SizedBox(width: 8),
               ],
             ),
 
-            // Content
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome Section
-                  _buildWelcomeSection(),
-                  
-                  // Streak Card
-                  _buildStreakCard(),
-                  
-                  // Daily Verse Card
-                  _buildDailyVerseCard(),
-                  
-                  // Quick Actions
-                  _buildQuickActions(),
-                  
-                  // Featured Content
-                  _buildFeaturedSection(),
-                  
-                  // Live Events
-                  _buildLiveEventsSection(),
-                  
-                  // Community Feed Preview
-                  _buildCommunityFeedPreview(),
+                  const SizedBox(height: 8),
+
+                  // ── Greeting ─────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Good to see you,',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: ReliqTheme.text2(context),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          firstName,
+                          style: Theme.of(context).textTheme.displaySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── Daily verse ───────────────────────
+                  _DailyVerseCard(),
+
+                  const SizedBox(height: 16),
+
+                  // ── Streak ────────────────────────────
+                  _StreakCard(),
+
+                  const SizedBox(height: 24),
+
+                  // ── Quick access ──────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Quick access',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: ReliqTheme.text2(context),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _QuickAccessRow(),
+
+                  const SizedBox(height: 24),
+
+                  // ── Community feed preview ────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'From your community',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: ReliqTheme.text2(context),
+                          ),
+                        ),
+                        _TextBtn(
+                          label: 'See all',
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const _PostCard(
+                    name: 'Sarah M.',
+                    time: '2h ago',
+                    content: 'Grateful for today\'s sermon on forgiveness. It really touched my heart.',
+                    likes: '45',
+                    comments: '12',
+                  ),
+                  const _PostCard(
+                    name: 'David K.',
+                    time: '4h ago',
+                    content: 'Just finished reading the book of Psalms. What a journey of faith and trust.',
+                    likes: '28',
+                    comments: '7',
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -76,188 +154,67 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
-  Widget _buildWelcomeSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome back! 👋',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Continue your spiritual journey today',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStreakCard() {
-    return Consumer<StreakProvider>(
-      builder: (context, streakProvider, child) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF6B6B).withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Center(
-                  child: Text(
-                    '🔥',
-                    style: TextStyle(fontSize: 32),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Daily Streak',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${streakProvider.currentStreak} days',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      streakProvider.todayCompleted
-                          ? 'Great job today!'
-                          : 'Complete today\'s activity',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => Get.toNamed('/streaks'),
-                icon: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDailyVerseCard() {
+// ── Daily verse card ──────────────────────────────────────────────────────────
+class _DailyVerseCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Consumer<BibleProvider>(
-      builder: (context, bibleProvider, child) {
-        if (bibleProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final dailyVerse = bibleProvider.dailyVerse;
-        if (dailyVerse == null) return const SizedBox.shrink();
-
-        return GestureDetector(
+      builder: (context, bible, _) {
+        final verse = bible.dailyVerse;
+        return _PressableCard(
           onTap: () => Get.toNamed('/daily-verse'),
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6C63FF),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF).withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(
-                      Icons.auto_stories,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Verse of the Day',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Icon(Icons.auto_stories_outlined, size: 16, color: ReliqTheme.text2(context)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Verse of the day',
+                      style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const Spacer(),
-                    Icon(
-                      Icons.share,
-                      color: Colors.white.withOpacity(0.8),
-                      size: 20,
-                    ),
+                    Icon(Icons.arrow_forward, size: 14, color: ReliqTheme.text3(context)),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  dailyVerse.verse.text,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    height: 1.6,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
                 const SizedBox(height: 12),
-                Text(
-                  dailyVerse.verse.reference,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                if (bible.isLoading)
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: ReliqTheme.surface2(context),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  )
+                else if (verse != null) ...[
+                  Text(
+                    '"${verse.verse.text}"',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      height: 1.6,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    verse.verse.reference,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ] else
+                  Text(
+                    'Tap to load today\'s verse',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: ReliqTheme.text2(context),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -265,339 +222,141 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+}
 
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Actions',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.quiz_outlined,
-                  label: 'Bible Quiz',
-                  color: const Color(0xFF4CAF50),
-                  onTap: () => Get.toNamed('/quiz'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.volunteer_activism,
-                  label: 'Donate',
-                  color: const Color(0xFFFF6B6B),
-                  onTap: () => Get.toNamed('/donations'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.shopping_bag_outlined,
-                  label: 'Shop',
-                  color: const Color(0xFFFF9800),
-                  onTap: () => Get.toNamed('/marketplace'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.live_tv,
-                  label: 'Live',
-                  color: const Color(0xFF9C27B0),
-                  onTap: () => Get.toNamed('/live-events'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeaturedSection() {
-    return Container(
-      margin: const EdgeInsets.only(top: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('See all'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 300,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    image: const DecorationImage(
-                      image: NetworkImage('https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    alignment: Alignment.bottomLeft,
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sunday Service',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Join us this weekend',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLiveEventsSection() {
-    return Container(
-      margin: const EdgeInsets.only(top: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+// ── Streak card ───────────────────────────────────────────────────────────────
+class _StreakCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<StreakProvider>(
+      builder: (context, streak, _) {
+        return _PressableCard(
+          onTap: () => Get.toNamed('/streaks'),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(4),
+                    color: ReliqTheme.surface2(context),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
-                    'LIVE',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Icon(
+                    Icons.local_fire_department_outlined,
+                    size: 20,
+                    color: ReliqTheme.ink(context),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Happening Now',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 120,
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.red.shade200),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.play_circle_outline, size: 40, color: Colors.red),
-                ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Prayer & Worship Session',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        '245 people watching',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        '${streak.currentStreak} day streak',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => Get.toNamed('/live-events'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          minimumSize: const Size(100, 36),
-                        ),
-                        child: const Text('Join Now'),
+                      const SizedBox(height: 2),
+                      Text(
+                        streak.todayCompleted
+                            ? 'Completed for today'
+                            : 'Complete today\'s activity',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
+                Icon(Icons.arrow_forward, size: 14, color: ReliqTheme.text3(context)),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildCommunityFeedPreview() {
-    return Container(
-      margin: const EdgeInsets.only(top: 32, bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Community Updates',
-                  style: Theme.of(context).textTheme.titleLarge,
+// ── Quick access row ──────────────────────────────────────────────────────────
+class _QuickAccessRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.shopping_bag_outlined, 'Shop',    '/marketplace'),
+      (Icons.volunteer_activism,    'Give',    '/donations'),
+      (Icons.play_circle_outline,   'Live',    '/live-events'),
+      (Icons.quiz_outlined,         'Quiz',    '/quiz'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: items.map((item) {
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: item == items.last ? 0 : 10,
+              ),
+              child: _PressableCard(
+                onTap: () => Get.toNamed(item.$3),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
+                    children: [
+                      Icon(item.$1, size: 20, color: ReliqTheme.ink(context)),
+                      const SizedBox(height: 6),
+                      Text(
+                        item.$2,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: ReliqTheme.text2(context),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('See all'),
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 2,
-            itemBuilder: (context, index) {
-              return _CommunityPostCard();
-            },
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
+// ── Post card ─────────────────────────────────────────────────────────────────
+class _PostCard extends StatefulWidget {
+  final String name;
+  final String time;
+  final String content;
+  final String likes;
+  final String comments;
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
+  const _PostCard({
+    required this.name,
+    required this.time,
+    required this.content,
+    required this.likes,
+    required this.comments,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<_PostCard> createState() => _PostCardState();
 }
 
-class _CommunityPostCard extends StatelessWidget {
+class _PostCardState extends State<_PostCard> {
+  bool _liked = false;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: ReliqTheme.surface(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ReliqTheme.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,52 +364,62 @@ class _CommunityPostCard extends StatelessWidget {
           Row(
             children: [
               CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[300],
-                child: const Icon(Icons.person, color: Colors.white),
+                radius: 16,
+                backgroundColor: ReliqTheme.surface2(context),
+                child: Text(
+                  widget.name[0],
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
               ),
-              const SizedBox(width: 12),
-              const Expanded(
+              const SizedBox(width: 10),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'John Doe',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      '2 hours ago',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
+                    Text(widget.name, style: Theme.of(context).textTheme.titleSmall),
+                    Text(widget.time, style: Theme.of(context).textTheme.labelSmall),
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.more_horiz),
-                onPressed: () {},
-              ),
+              Icon(Icons.more_horiz, size: 18, color: ReliqTheme.text3(context)),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Grateful for today\'s sermon on forgiveness. It really touched my heart. 🙏',
-            style: TextStyle(fontSize: 14, height: 1.5),
-          ),
-          const SizedBox(height: 12),
+          Text(widget.content, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 14),
           Row(
             children: [
-              _InteractionButton(icon: Icons.favorite_border, label: '45'),
-              const SizedBox(width: 16),
-              _InteractionButton(icon: Icons.comment_outlined, label: '12'),
-              const SizedBox(width: 16),
-              _InteractionButton(icon: Icons.share_outlined, label: 'Share'),
+              // Like button with micro interaction
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _liked = !_liked);
+                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Row(
+                    key: ValueKey(_liked),
+                    children: [
+                      Icon(
+                        _liked ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
+                        color: _liked ? ReliqTheme.ink(context) : ReliqTheme.text3(context),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.likes,
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Icon(Icons.chat_bubble_outline, size: 16, color: ReliqTheme.text3(context)),
+              const SizedBox(width: 4),
+              Text(widget.comments, style: Theme.of(context).textTheme.labelMedium),
+              const Spacer(),
+              Icon(Icons.share_outlined, size: 16, color: ReliqTheme.text3(context)),
             ],
           ),
         ],
@@ -659,25 +428,107 @@ class _CommunityPostCard extends StatelessWidget {
   }
 }
 
-class _InteractionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
+// ── Reusable pressable card ───────────────────────────────────────────────────
+// Scales down slightly on press — subtle micro interaction
+class _PressableCard extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final EdgeInsets? margin;
 
-  const _InteractionButton({required this.icon, required this.label});
+  const _PressableCard({
+    required this.child,
+    required this.onTap,
+    this.margin,
+  });
+
+  @override
+  State<_PressableCard> createState() => _PressableCardState();
+}
+
+class _PressableCardState extends State<_PressableCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      lowerBound: 0.0,
+      upperBound: 0.02,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) => Transform.scale(
+          scale: _scale.value,
+          child: child,
+        ),
+        child: Container(
+          margin: widget.margin,
+          decoration: BoxDecoration(
+            color: ReliqTheme.surface(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: ReliqTheme.border(context)),
           ),
-        ],
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IconBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 22),
+      onPressed: onTap,
+      splashRadius: 20,
+    );
+  }
+}
+
+class _TextBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _TextBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: ReliqTheme.ink(context),
+        ),
       ),
     );
   }

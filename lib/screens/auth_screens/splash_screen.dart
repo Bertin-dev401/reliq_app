@@ -18,15 +18,11 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..forward();
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
 
-    // After 3 seconds, check if user is already logged in.
-    // tryAutoLogin() reads the saved token from SharedPreferences.
-    // If valid → go to /main (skip welcome/signin).
-    // If not   → go to /welcome (normal onboarding flow).
     Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       try {
@@ -34,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen>
         final loggedIn = await auth.tryAutoLogin();
         Get.offNamed(loggedIn ? '/main' : '/welcome');
       } catch (_) {
-        // If anything fails (Firebase, network etc.) just go to welcome
         Get.offNamed('/welcome');
       }
     });
@@ -48,41 +43,51 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF6C63FF);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0A0A0A) : Colors.white;
+    final textColor = isDark ? const Color(0xFFF5F5F5) : const Color(0xFF0D0D0D);
+    final subColor = isDark ? const Color(0xFF555555) : const Color(0xFFABABAB);
+    final barColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       body: FadeTransition(
         opacity: _fade,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.church_rounded, size: 72, color: accent),
-              const SizedBox(height: 24),
-              const Text(
+              Icon(
+                Icons.church_rounded,
+                size: 48,
+                color: textColor,
+              ),
+              const SizedBox(height: 20),
+              Text(
                 'RELIQ',
                 style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 10,
-                  color: Color(0xFF2D3748),
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 8,
+                  color: textColor,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 'Faith · Community · Connection',
                 style: TextStyle(
-                  fontSize: 13,
-                  letterSpacing: 3,
-                  color: Colors.grey[500],
+                  fontSize: 12,
+                  letterSpacing: 2,
+                  color: subColor,
                 ),
               ),
               const SizedBox(height: 48),
-              const SizedBox(
-                width: 120,
+              SizedBox(
+                width: 80,
                 child: LinearProgressIndicator(
-                  color: accent,
-                  backgroundColor: Color(0xFFE8E6FF),
+                  color: textColor,
+                  backgroundColor: barColor,
+                  minHeight: 1,
                 ),
               ),
             ],
