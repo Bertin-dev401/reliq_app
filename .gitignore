@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase config files — NEVER commit these to version control
+# They contain API keys that can be exploited if exposed publicly.
+# Each developer/CI environment must have their own copy locally.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

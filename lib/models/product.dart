@@ -1,3 +1,5 @@
+import '../utils/firestore_utils.dart';
+
 /// Marketplace and product-related data models
 /// 
 /// This file contains all models related to the marketplace,
@@ -58,9 +60,7 @@ class Product {
       rating: (json['rating'] ?? 0).toDouble(),
       reviewsCount: json['reviews_count'] ?? 0,
       isFeatured: json['is_featured'] ?? false,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+      createdAt: readFirestoreDate(json['created_at']),
     );
   }
 
@@ -131,9 +131,7 @@ class ProductReview {
       userImage: json['user_image'],
       rating: (json['rating'] ?? 0).toDouble(),
       comment: json['comment'] ?? '',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+      createdAt: readFirestoreDate(json['created_at']),
     );
   }
 
@@ -193,11 +191,9 @@ class Order {
       status: json['status'] ?? 'pending',
       shippingAddress: json['shipping_address'] ?? '',
       trackingNumber: json['tracking_number'],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+      createdAt: readFirestoreDate(json['created_at']),
       deliveredAt: json['delivered_at'] != null
-          ? DateTime.parse(json['delivered_at'])
+          ? readFirestoreDate(json['delivered_at'])
           : null,
     );
   }

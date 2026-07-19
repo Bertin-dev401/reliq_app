@@ -1,3 +1,5 @@
+import '../utils/firestore_utils.dart';
+
 class FaithEvent {
   final String id;
   final String title;
@@ -40,12 +42,8 @@ class FaithEvent {
       description: json['description'] ?? '',
       coverImage: json['cover_image'],
       location: json['location'] ?? '',
-      startDate: json['start_date'] != null 
-          ? DateTime.parse(json['start_date']) 
-          : DateTime.now(),
-      endDate: json['end_date'] != null 
-          ? DateTime.parse(json['end_date']) 
-          : DateTime.now(),
+      startDate: readFirestoreDate(json['start_date']),
+      endDate: readFirestoreDate(json['end_date']),
       denomination: json['denomination'] ?? '',
       organizerId: json['organizer_id'] ?? '',
       organizerName: json['organizer_name'] ?? '',

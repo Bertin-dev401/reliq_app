@@ -66,12 +66,20 @@ class BibleProvider with ChangeNotifier {
       // Cache it so we don't call the API again today
       await prefs.setString('daily_verse_date', todayKey);
       await prefs.setString('daily_verse_data', jsonEncode(data));
+      await prefs.setString('daily_verse_latest', jsonEncode(data));
 
       _dailyVerse = _parseDailyVerse(data);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _error = 'Could not load daily verse. Check your connection.';
+      final prefs = await SharedPreferences.getInstance();
+      final latestVerse = prefs.getString('daily_verse_latest');
+      if (latestVerse != null) {
+        _dailyVerse = _parseDailyVerse(jsonDecode(latestVerse));
+        _error = null;
+      } else {
+        _error = 'Could not load daily verse. Check your connection.';
+      }
       _isLoading = false;
       notifyListeners();
     }
@@ -85,7 +93,10 @@ class BibleProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'bible_chapter_$bookAndChapter';
       final data = await getVerse(bookAndChapter);
+      await prefs.setString(cacheKey, jsonEncode(data));
       final verses = data['verses'] as List? ?? [];
       _currentChapter = verses.map((v) {
         return BibleVerse(
@@ -99,7 +110,25 @@ class BibleProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _error = 'Could not load chapter. Check your connection.';
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'bible_chapter_$bookAndChapter';
+      final cached = prefs.getString(cacheKey);
+      if (cached != null) {
+        final data = jsonDecode(cached);
+        final verses = data['verses'] as List? ?? [];
+        _currentChapter = verses.map((v) {
+          return BibleVerse(
+            id: '${v['book_id']}_${v['chapter']}_${v['verse']}',
+            book: v['book_name'] ?? '',
+            chapter: v['chapter'] ?? 0,
+            verse: v['verse'] ?? 0,
+            text: (v['text'] as String? ?? '').trim(),
+          );
+        }).toList();
+        _error = null;
+      } else {
+        _error = 'Could not load chapter. Check your connection.';
+      }
       _isLoading = false;
       notifyListeners();
     }

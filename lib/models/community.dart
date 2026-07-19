@@ -1,3 +1,5 @@
+import '../utils/firestore_utils.dart';
+
 enum Denomination {
   catholic,
   protestant,
@@ -39,9 +41,7 @@ class Community {
       coverImage: json['cover_image'],
       denomination: json['denomination'] ?? '',
       memberCount: json['member_count'] ?? 0,
-      createdDate: json['created_date'] != null 
-          ? DateTime.parse(json['created_date']) 
-          : DateTime.now(),
+      createdDate: readFirestoreDate(json['created_date']),
       isPrivate: json['is_private'] ?? false,
       moderators: json['moderators'] != null 
           ? List<String>.from(json['moderators']) 
@@ -70,6 +70,8 @@ class Post {
   final String userName;
   final String? userImage;
   final String communityId;
+  final String? communityName;
+  final String? communityDenomination;
   final String content;
   final List<String> images;
   final String? videoUrl;
@@ -84,6 +86,8 @@ class Post {
     required this.userName,
     this.userImage,
     required this.communityId,
+    this.communityName,
+    this.communityDenomination,
     required this.content,
     this.images = const [],
     this.videoUrl,
@@ -100,14 +104,14 @@ class Post {
       userName: json['user_name'] ?? '',
       userImage: json['user_image'],
       communityId: json['community_id'] ?? '',
+      communityName: json['community_name'],
+      communityDenomination: json['community_denomination'],
       content: json['content'] ?? '',
       images: json['images'] != null ? List<String>.from(json['images']) : [],
       videoUrl: json['video_url'],
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
-          : DateTime.now(),
+      createdAt: readFirestoreDate(json['created_at']),
       isLiked: json['is_liked'] ?? false,
     );
   }
@@ -119,6 +123,8 @@ class Post {
       'user_name': userName,
       'user_image': userImage,
       'community_id': communityId,
+      'community_name': communityName,
+      'community_denomination': communityDenomination,
       'content': content,
       'images': images,
       'video_url': videoUrl,
@@ -157,9 +163,7 @@ class Comment {
       userName: json['user_name'] ?? '',
       userImage: json['user_image'],
       content: json['content'] ?? '',
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
-          : DateTime.now(),
+      createdAt: readFirestoreDate(json['created_at']),
     );
   }
 

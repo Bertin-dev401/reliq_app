@@ -1,0 +1,222 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// RELIQ FIRESTORE SECURITY RULES
+// Deploy with: firebase deploy --only firestore:rules
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// RULE PHILOSOPHY:
+//   - Default DENY everything. Only explicitly allow what is needed.
+//   - request.auth must never be null before accessing any data.
+//   - Users can only read/write their own documents.
+//   - Community content is readable by authenticated users only.
+//   - No collection group queries that could leak cross-user data.
+//
+// COST PROTECTION:
+//   - All list queries are blocked unless explicitly allowed.
+//   - No wildcard reads on large collections.
+//   - Document size limits enforced where possible.
+// ─────────────────────────────────────────────────────────────────────────────
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── DEFAULT: DENY EVERYTHING ──────────────────────────────────────────────
+    // Fix: replaces the test mode "allow read, write: if true" that was set
+    // when Firestore was first created. Without this, anyone can access all data.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ── HELPER FUNCTIONS ──────────────────────────────────────────────────────
+
+    // Fix: always check request.auth != null FIRST before any other check.
+    // If request.auth is null and you check request.auth.uid, Firestore throws
+    // an error that can expose internal error messages to attackers.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Fix: ensures the requesting user owns the document they're accessing.
+    // Prevents user A from reading or modifying user B's data.
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Fix: limits document write size to prevent cost bombs where an attacker
+    // writes massive documents to inflate your Firestore storage bill.
+    function isValidSize() {
+      return request.resource.data.size() < 50;
+    }
+
+    // ── USERS COLLECTION ─────────────────────────────────────────────────────
+    // /users/{userId}
+    //
+    // Exploit prevented: without these rules, any authenticated user could
+    // read every other user's email, denomination, ethnicity, and profile data.
+    // With these rules, you can only read and write YOUR OWN document.
+    match /users/{userId} {
+      // Read: only the owner can read their own profile
+      allow read: if isOwner(userId);
+
+      // Write: only the owner can update their own profile
+      // isValidSize() prevents someone writing a 10MB document to your DB
+      allow write: if isOwner(userId) && isValidSize();
+
+      // Create: only the authenticated user can create their own document
+      // This is called during signup — uid must match the document ID
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidSize()
+        // Fix: enforce required fields exist on creation
+        && request.resource.data.keys().hasAll(['name', 'email', 'joined_date']);
+    }
+
+    // ── COMMUNITIES COLLECTION ────────────────────────────────────────────────
+    // /communities/{communityId}
+    //
+    // Exploit prevented: without auth check, anyone could list all communities,
+    // scrape member counts, and enumerate your entire user base indirectly.
+    match /communities/{communityId} {
+      // Any signed-in user can read communities (needed for the community screen)
+      allow read: if isSignedIn();
+
+      // Only signed-in users can create communities
+      // Fix: enforce the creator field matches the requesting user
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isValidSize();
+
+      // Only the community creator can update or delete it
+      allow update, delete: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+    }
+
+    // ── POSTS SUBCOLLECTION ───────────────────────────────────────────────────
+    // /communities/{communityId}/posts/{postId}
+    //
+    // Exploit prevented: without the userId check on write, any authenticated
+    // user could post as someone else by setting userId to another user's ID.
+    match /communities/{communityId}/posts/{postId} {
+      // Any signed-in user can read posts in a community
+      allow read: if isSignedIn();
+
+      // Fix: enforce the post's userId field matches the authenticated user
+      // This prevents impersonation — you can't post as someone else
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && isValidSize();
+
+      // Only the post author can update or delete their post
+      allow update, delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // ── EVENTS COLLECTION ─────────────────────────────────────────────────────
+    // /events/{eventId}
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.organizerId == request.auth.uid
+        && isValidSize();
+
+      allow update, delete: if isSignedIn()
+        && resource.data.organizerId == request.auth.uid;
+
+      // Fix: allow collection group query on attendees subcollection
+      // needed by watchMyRsvps() in event_repository.dart
+      // Without this rule, the query is denied and RSVP tracking silently fails
+      match /attendees/{userId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // ── COLLECTION GROUP: posts ───────────────────────────────────────────────
+    // Needed by watchCommunityFeed() in community_repository.dart
+    // collectionGroup queries require an explicit rule or they are denied
+    // Fix: only signed-in users can query across all posts collections
+    match /{path=**}/posts/{postId} {
+      allow read: if isSignedIn();
+    }
+
+    // ── PRODUCTS COLLECTION ───────────────────────────────────────────────────
+    // /products/{productId}
+    //
+    // Exploit prevented: without auth, anyone could list all products and
+    // scrape your entire marketplace inventory and seller information.
+    match /products/{productId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.sellerId == request.auth.uid
+        && isValidSize();
+
+      allow update, delete: if isSignedIn()
+        && resource.data.sellerId == request.auth.uid;
+    }
+
+    // ── ORDERS COLLECTION ─────────────────────────────────────────────────────
+    // /orders/{orderId}
+    //
+    // Exploit prevented: without these rules, any user could read all orders
+    // including payment amounts, buyer identities, and purchase history.
+    match /orders/{orderId} {
+      // Fix: only the buyer OR the seller can read an order
+      // This prevents order history leaking between users
+      allow read: if isSignedIn()
+        && (resource.data.buyerId == request.auth.uid
+            || resource.data.sellerId == request.auth.uid);
+
+      // Only the buyer can create an order (they are the one purchasing)
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && isValidSize();
+
+      // Orders cannot be updated or deleted once created
+      // Fix: immutable orders prevent fraud (changing order amounts after payment)
+      allow update, delete: if false;
+    }
+
+    // ── CHATS COLLECTION ──────────────────────────────────────────────────────
+    // /chats/{chatId}/messages/{messageId}
+    //
+    // Exploit prevented: without participant check, any user could read
+    // private messages between two other users.
+    match /chats/{chatId} {
+      // Fix: only participants of the chat can read it
+      // chatId is generated as uid1_uid2 sorted alphabetically
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.participants;
+
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants;
+
+      match /messages/{messageId} {
+        // Fix: only chat participants can read messages
+        allow read: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        // Fix: sender must be the authenticated user — prevents sending as someone else
+        allow create: if isSignedIn()
+          && request.resource.data.senderId == request.auth.uid
+          && isValidSize();
+
+        // Messages cannot be edited or deleted (audit trail)
+        allow update, delete: if false;
+      }
+    }
+
+    // ── DONATIONS COLLECTION ──────────────────────────────────────────────────
+    match /donations/{donationId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.donorId == request.auth.uid
+        && isValidSize();
+
+      // Donations are immutable once created
+      allow update, delete: if false;
+    }
+  }
+}

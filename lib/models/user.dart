@@ -1,3 +1,5 @@
+import '../utils/firestore_utils.dart';
+
 class User {
   final String id;
   final String email;
@@ -42,9 +44,7 @@ class User {
       prayerGoals: json['prayer_goals'] != null 
           ? List<String>.from(json['prayer_goals']) 
           : [],
-      joinedDate: json['joined_date'] != null 
-          ? DateTime.parse(json['joined_date']) 
-          : DateTime.now(),
+      joinedDate: readFirestoreDate(json['joined_date']),
       streakCount: json['streak_count'] ?? 0,
       isPremium: json['is_premium'] ?? false,
     );
