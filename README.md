@@ -12,7 +12,6 @@ Tech Stack
 | Tool | Purpose |
 |------|----------|
 | **Flutter / Dart** | Frontend mobile app (Android & iOS) |
-| **MySQL** | Backend database for users, posts, and Bible content |
 | **Figma** | UI/UX design and prototyping |
 | **Firebase (optional)** | Authentication, cloud messaging, and push notifications |
 | **Node.js / Express (optional)** | Backend API layer connecting Flutter with MySQL |
@@ -50,7 +49,7 @@ Core Features
 ---
 
 How FaithConnect Stands Out
-Unlike traditional Bible apps (like YouVersion or Bible.is), **FaithConnect** focuses on **community, culture, and connection**:
+Unlike traditional Bible apps (like YouVersion or Bible.is), **Reliq** focuses on **community, culture, and connection**:
 - **Community:** Faith-based networking and discussion, not just reading
 - **Events:** Connect users to real-world gatherings and activities
 - **Commerce:** Help small faith-based brands sell directly through the app
